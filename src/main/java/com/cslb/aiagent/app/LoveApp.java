@@ -57,6 +57,24 @@ public class LoveApp {
         return responseText;
     }
 
+    record Report(String title, List<String> suggestions){} //定义一个Report类，用于存储报告（java新特性）
+
+
+    //输出指定格式的回复
+    public Report doChatWithReport(String message, String chatId){
+        Report report = chatClient
+                .prompt()
+                .system(SYSTEM_PROMPT + "每次对话后都要生成恋爱结果，标题为{用户名}的恋爱报告，内容为建议列表")
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置对话的id
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //设置对话记忆的大小
+                )
+                .call()
+                .entity(Report.class);
+
+        log.info("report: {}",report);
+        return report;
+    }
 }
 
 
