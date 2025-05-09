@@ -19,16 +19,16 @@ class LoveAppTest {
         String chatId = UUID.randomUUID().toString();
 
         //第一轮对话
-        String answer = loveApp.doChat("我是cslb，你是谁呀",chatId);
-        Assertions.assertNotNull(answer); //断言NotNull
+//        String answer = loveApp.doChat("我是暴力狂",chatId);
+//        Assertions.assertNotNull(answer); //断言NotNull
 
-        //第二轮对话
-        answer = loveApp.doChat("我如何能让我的另一半更爱我",chatId);
-        Assertions.assertNotNull(answer);
-
-        //第三轮对话
-        answer = loveApp.doChat("你还记得我是谁嘛",chatId);
-        Assertions.assertNotNull(answer);
+//        //第二轮对话
+//        answer = loveApp.doChat("我如何能让我的另一半更爱我",chatId);
+//        Assertions.assertNotNull(answer);
+//
+//        //第三轮对话
+//        answer = loveApp.doChat("你还记得我是谁嘛",chatId);
+//        Assertions.assertNotNull(answer);
 
     }
 

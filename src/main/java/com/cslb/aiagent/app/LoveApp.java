@@ -1,6 +1,9 @@
 package com.cslb.aiagent.app;
 
+import com.cslb.aiagent.advisor.BannedWordsAdvisor;
 import com.cslb.aiagent.advisor.MyLoggerAdvisor;
+import com.cslb.aiagent.dto.ChatRequest;
+import dev.langchain4j.data.message.ChatMessage;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -10,6 +13,10 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -17,7 +24,8 @@ import java.util.List;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
-@Component
+//@Component
+@RestController
 @Slf4j
 public class LoveApp {
 
@@ -36,22 +44,41 @@ public class LoveApp {
         chatClient = ChatClient.builder(dashscopeChatModel) //模型
                 .defaultSystem(SYSTEM_PROMPT) //设置系统的promot
                 .defaultAdvisors(
+                        new BannedWordsAdvisor(),
                         new MessageChatMemoryAdvisor(chatMemory), //添加一个消息记忆的顾问（拦截器）
                         new MyLoggerAdvisor() //添加自定义的日志拦截器
                 )
                 .build();
     }
 
-    //传入用户输入消息和对话id，即为一轮对话（同步、非流式）
-    public String doChat(String message, String chatId){
-        ChatResponse chatResponse = chatClient
+    //传入用户输入消息和对话id，即为一轮对话（流式）
+    @PostMapping("/chat")
+    public Flux<String> doChat(@RequestBody ChatRequest chatRequest){
+        String message = chatRequest.getMessage();
+        String chatId = chatRequest.getChatId();
+
+        Flux<String> streamResponse = chatClient
                     .prompt()
                     .user(message)
                     .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置对话的id
                             .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //设置对话记忆的大小
                     )
-                    .call()
-                    .chatResponse();
+                    .stream()
+                    .content();
+        return streamResponse;
+    }
+
+
+
+    public String doChat(String message, String chatId){
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置对话的id
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //设置对话记忆的大小
+                )
+                .call()
+                .chatResponse();
         String responseText = chatResponse.getResult().getOutput().getText();
         log.info("responseText: {}",responseText);
         return responseText;

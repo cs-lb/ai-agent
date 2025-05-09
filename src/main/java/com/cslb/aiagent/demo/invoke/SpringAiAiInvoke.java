@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 /**
  * SpringAI alibaba 框架调用 AI 大模型
  */
-@Component
+//@Component
 public class SpringAiAiInvoke implements CommandLineRunner { //实现CommandLineRunner接口，并且类加了@Component，项目启动时会执行自动run方法
 
     @Resource
