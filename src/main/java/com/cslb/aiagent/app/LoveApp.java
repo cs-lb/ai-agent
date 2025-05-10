@@ -2,24 +2,25 @@ package com.cslb.aiagent.app;
 
 import com.cslb.aiagent.advisor.BannedWordsAdvisor;
 import com.cslb.aiagent.advisor.MyLoggerAdvisor;
-import com.cslb.aiagent.dto.ChatRequest;
-import dev.langchain4j.data.message.ChatMessage;
+import com.cslb.aiagent.chatMemory.MySQLChatMemory;
+import com.cslb.aiagent.model.dto.ChatRequest;
+import com.cslb.aiagent.model.vo.HistoryChatVO;
+import com.cslb.aiagent.service.ChatMemoryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
@@ -27,6 +28,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 //@Component
 @RestController
 @Slf4j
+@RequestMapping("/chat")
 public class LoveApp {
 
     private final ChatClient chatClient;
@@ -36,23 +38,29 @@ public class LoveApp {
             "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题。" +
             "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
 
+    @Resource
+    private ChatMemoryService chatMemoryService;
+
     //构造器注入方式来注入dashscopeChatModel，并创建一个ChatClient对象
-    public LoveApp(ChatModel dashscopeChatModel){
-        //初始化基于内存的对话记忆
-        ChatMemory chatMemory = new InMemoryChatMemory();
+    public LoveApp(ChatModel dashscopeChatModel,MySQLChatMemory mysqlChatMemory){
+        //初始化基于MySQL的对话记忆
 
         chatClient = ChatClient.builder(dashscopeChatModel) //模型
                 .defaultSystem(SYSTEM_PROMPT) //设置系统的promot
                 .defaultAdvisors(
                         new BannedWordsAdvisor(),
-                        new MessageChatMemoryAdvisor(chatMemory), //添加一个消息记忆的顾问（拦截器）
+                        new MessageChatMemoryAdvisor(mysqlChatMemory), //添加一个消息记忆的顾问（拦截器）
                         new MyLoggerAdvisor() //添加自定义的日志拦截器
                 )
                 .build();
     }
 
-    //传入用户输入消息和对话id，即为一轮对话（流式）
-    @PostMapping("/chat")
+    /**
+     * 传入用户输入消息和对话id，即为一轮对话（流式）
+     * @param chatRequest
+     * @return
+     */
+    @PostMapping("")
     public Flux<String> doChat(@RequestBody ChatRequest chatRequest){
         String message = chatRequest.getMessage();
         String chatId = chatRequest.getChatId();
@@ -68,7 +76,20 @@ public class LoveApp {
         return streamResponse;
     }
 
+    /**
+     * 返回所有历史会话的 chatId 和摘要（首条消息）。
+     * @return
+     */
+    @GetMapping("/history/list")
+    public List<HistoryChatVO> getHistoryChatList(){
+        return chatMemoryService.getHistoryChatList();
+    }
 
+    @GetMapping("/history/{chatId}")
+    public List<Message> getChatHistory(@PathVariable String chatId){
+        List<Message> messages = chatMemoryService.selectMessageById(chatId);
+        return messages;
+    }
 
     public String doChat(String message, String chatId){
         ChatResponse chatResponse = chatClient
