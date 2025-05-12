@@ -1,16 +1,16 @@
-package com.cslb.aiagent.demo.invoke;
-
-import dev.langchain4j.community.model.dashscope.QwenChatModel;
-import dev.langchain4j.model.chat.ChatLanguageModel;
-
-public class LangChainAiInvoke {
-
-    public static void main(String[] args) {
-        ChatLanguageModel qwenModel = QwenChatModel.builder()
-                .apiKey("sk-26e572dff515469fa1ade664a7923a44")
-                .modelName("qwen-max")
-                .build();
-        String answer = qwenModel.chat("你是谁");
-        System.out.println(answer);
-    }
-}
+//package com.cslb.aiagent.demo.invoke;
+//
+//import dev.langchain4j.community.model.dashscope.QwenChatModel;
+//import dev.langchain4j.model.chat.ChatLanguageModel;
+//
+//public class LangChainAiInvoke {
+//
+//    public static void main(String[] args) {
+//        ChatLanguageModel qwenModel = QwenChatModel.builder()
+//                .apiKey("sk-26e572dff515469fa1ade664a7923a44")
+//                .modelName("qwen-max")
+//                .build();
+//        String answer = qwenModel.chat("你是谁");
+//        System.out.println(answer);
+//    }
+//}

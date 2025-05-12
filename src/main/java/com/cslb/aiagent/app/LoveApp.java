@@ -10,11 +10,14 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -76,6 +79,44 @@ public class LoveApp {
         return streamResponse;
     }
 
+
+    @Resource
+    private VectorStore loveAppVectorStore; //基于本地知识库
+
+    @Resource
+    private Advisor loveAppRagCloudAdvisor; //基于云知识库
+
+    @Resource
+    private VectorStore pgVectorVectorStore; //基于PgVector 向量存储
+
+
+    /**
+     * 传入用户输入消息和对话id，即为一轮对话（基于RAG）
+     * @param chatRequest
+     * @return
+     */
+    @PostMapping("/rag")
+    public Flux<String> doChatWithRag(@RequestBody ChatRequest chatRequest){
+        String message = chatRequest.getMessage();
+        String chatId = chatRequest.getChatId();
+
+        Flux<String> streamResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置对话的id
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //设置对话记忆的大小
+                )
+                // 应用 RAG 知识库问答
+//                .advisors(new QuestionAnswerAdvisor(loveAppVectorStore))
+                // 应用 RAG 检索增强服务（基于云知识库 和 RetrievalAugmentationAdvisor）
+//                .advisors(loveAppRagCloudAdvisor)
+                // 应用 RAG 检索增强服务（基于PgVector 向量存储）
+                .advisors(new QuestionAnswerAdvisor(pgVectorVectorStore))
+                .stream()
+                .content();
+        return streamResponse;
+    }
+
     /**
      * 返回所有历史会话的 chatId 和摘要（首条消息）。
      * @return
@@ -85,11 +126,21 @@ public class LoveApp {
         return chatMemoryService.getHistoryChatList();
     }
 
+    /**
+     * 返回指定 chatId 的历史对话记录。
+     * @param chatId
+     * @return
+     */
     @GetMapping("/history/{chatId}")
     public List<Message> getChatHistory(@PathVariable String chatId){
         List<Message> messages = chatMemoryService.selectMessageById(chatId);
         return messages;
     }
+
+
+
+
+
 
     public String doChat(String message, String chatId){
         ChatResponse chatResponse = chatClient

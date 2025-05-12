@@ -8,6 +8,12 @@ spring:
       base-url: http://localhost:11434
       chat:
         model: qwen3:8b
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        dimension: 1536
+        distance-type: cosine_distance
+        max-document-batch-size: 10000
 server:
   port: 8123 # 服务端口
   servlet:
