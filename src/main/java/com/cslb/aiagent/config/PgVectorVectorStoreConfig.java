@@ -44,7 +44,7 @@ public class PgVectorVectorStoreConfig {
 //            vectorStore.add(subList);
 //        }
         // 添加文档到向量数据库
-        vectorStore.add(documents);
+//        vectorStore.add(documents);
         return vectorStore;
     }
 }

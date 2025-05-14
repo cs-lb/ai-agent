@@ -6,6 +6,8 @@ import com.cslb.aiagent.chatMemory.MySQLChatMemory;
 import com.cslb.aiagent.model.dto.ChatRequest;
 import com.cslb.aiagent.model.vo.HistoryChatVO;
 import com.cslb.aiagent.service.ChatMemoryService;
+import com.cslb.aiagent.tools.FileOperationTool;
+import com.cslb.aiagent.tools.WebSearchTool;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -17,6 +19,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -117,6 +120,43 @@ public class LoveApp {
         return streamResponse;
     }
 
+    @PostMapping("/tools")
+    public Flux<String> doChatWithTools(@RequestBody ChatRequest chatRequest){
+        String message = chatRequest.getMessage();
+        String chatId = chatRequest.getChatId();
+
+        Flux<String> streamResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置对话的id
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10) //设置对话记忆的大小
+                )
+                //使用工具
+                .tools(new WebSearchTool("CaVScGn7vEVaEUANMeab9Mbk"))
+                .stream()
+                .content();
+        return streamResponse;
+    }
+
+
+    public String doChatWithTools(String message, String chatId) {
+        ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                // 开启日志，便于观察效果
+                .advisors(new MyLoggerAdvisor())
+                .tools(new WebSearchTool("CaVScGn7vEVaEUANMeab9Mbk"))
+                .call()
+                .chatResponse();
+        String content = response.getResult().getOutput().getText();
+        log.info("content: {}", content);
+        return content;
+    }
+
+
+
     /**
      * 返回所有历史会话的 chatId 和摘要（首条消息）。
      * @return
@@ -136,7 +176,6 @@ public class LoveApp {
         List<Message> messages = chatMemoryService.selectMessageById(chatId);
         return messages;
     }
-
 
 
 
