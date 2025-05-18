@@ -38,6 +38,17 @@ class LoveAppTest {
     }
 
 
+    @Resource
+    private ChatModel dashscopeChatModel;
+    @Test
+    public void testTool(){
+        String response = ChatClient.create(dashscopeChatModel)
+                .prompt("北京今天天气怎么样？")
+                .tools(new WeatherTools())  // 在这次对话中提供天气工具
+                .call()
+                .content();
+        log.info(response);
+    }
 
     @Test
     void testChatWithReport(){
@@ -70,7 +81,7 @@ class LoveAppTest {
     @Test
     public void testMessage() {
         String chatId = UUID.randomUUID().toString();
-        String answer = loveApp.doChatWithTools("最近和对象吵架了，看看编程导航网站（codefather.cn）的其他情侣是怎么解决矛盾的？", chatId);
+        String answer = loveApp.doChatWithTools("最近在研究AI，看看编程导航网站（codefather.cn）的文章是怎么讲解AI的？", chatId);
         Assertions.assertNotNull(answer);
     }
 

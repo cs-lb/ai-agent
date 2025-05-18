@@ -23,6 +23,7 @@ public class MySQLChatMemory implements ChatMemory{
     private ChatMemoryService chatMemoryService;
 
     public void add(String conversationId, List<Message> messages) {
+        log.info("Adding messages to MySQL chat memory：{}",messages);
         try {
             List<Message> all = chatMemoryService.selectMessageById(conversationId);
             all.addAll(messages);

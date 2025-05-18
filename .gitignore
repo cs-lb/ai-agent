@@ -1,5 +1,6 @@
 ## CUSTOM ##
 application-local.yml
+mcp-servers.json
 tmp/
 
 HELP.md
